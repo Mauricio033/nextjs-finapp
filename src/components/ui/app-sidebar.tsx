@@ -1,13 +1,12 @@
 import {
-  Calendar,
-  ChevronDown,
   ChevronUp,
   Home,
-  Inbox,
+  Landmark,
+  ArrowUpDown,
   Search,
   Settings,
+  Users,
   User2,
-  Link,
 } from "lucide-react";
 
 import Image from "next/image";
@@ -42,17 +41,17 @@ const items = [
   {
     title: "Transactions",
     url: "transactions",
-    icon: Inbox,
+    icon: ArrowUpDown,
   },
   {
     title: "Accounts",
-    url: "#",
-    icon: Calendar,
+    url: "accounts",
+    icon: Landmark,
   },
   {
     title: "Users",
     url: "#",
-    icon: Search,
+    icon: Users,
   },
   {
     title: "Settings",
