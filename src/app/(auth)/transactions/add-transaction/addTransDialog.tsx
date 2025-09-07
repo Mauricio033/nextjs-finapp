@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,11 +13,14 @@ import {
 import { TransactionForm } from "./addTransactionForm";
 
 type AccountOption = { id: string; name: string; currency: string };
+type CategoryOption = { id: string; name: string; kind?: "income"|"expense"|"transfer"|null };
 
 export function NewTransactionDialog({
   accounts,
+  categories
 }: {
   accounts: AccountOption[];
+  categories: CategoryOption[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -37,6 +39,7 @@ export function NewTransactionDialog({
         </DialogHeader>
           <TransactionForm
             accounts={accounts}
+            categories={categories}
             onSuccess={() => setOpen(false)}
           />
       </DialogContent>

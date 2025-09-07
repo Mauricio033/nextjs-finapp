@@ -6,11 +6,11 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServer } from "@/lib/supabase/server";
 
 const createTxSchema = z.object({
-  account_id: z.string().uuid(),
+  account_id: z.uuid(),
+  category_id: z.string().uuid().optional().or(z.literal("")).optional(),
   kind: z.enum(["income", "expense", "transfer"] as const),
   date: z.coerce.date(),
   amount_minor: z.number().int().nonnegative(),
-  counterparty: z.string().nullable().optional(),
   note: z.string().nullable().optional(),
 });
 
@@ -43,10 +43,10 @@ export async function createTransaction(input: CreateTxInput): Promise<CreateTxR
   const { error } = await supabase.from("transactions").insert({
     user_id: auth.user.id,
     account_id: v.account_id,
+    category_id: v.category_id,
     kind: v.kind,
     date: dateStr,
     amount_minor: signedAmount,
-    counterparty: v.counterparty ?? null,
     note: v.note ?? null,
   });
 

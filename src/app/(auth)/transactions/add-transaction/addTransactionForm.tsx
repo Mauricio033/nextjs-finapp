@@ -2,7 +2,7 @@
 
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -38,10 +38,18 @@ import { Input } from "@/components/ui/input";
 import { createTransaction } from "../actions";
 
 type AccountOption = { id: string; name: string; currency: string };
+type CategoryOption = {
+  id: string;
+  name: string;
+  kind?: "income" | "expense" | "transfer" | null;
+};
+
+const kindEnum = z.enum(["income", "expense", "transfer"]);
 
 const formSchema = z.object({
   account_id: z.uuid({ message: "Select an account" }),
-  kind: z.enum(["income", "expense", "transfer"] as const),
+  category_id: z.union([z.uuid(), z.literal("")]).optional(),
+  kind: z.union([kindEnum, z.literal("")]),
   date: z.date({
     error: (issue) => (issue.input === undefined ? "Required" : "Invalid date"),
   }),
@@ -54,16 +62,18 @@ const formSchema = z.object({
 
 type Props = {
   accounts: AccountOption[];
+  categories: CategoryOption[];
   onSuccess?: () => void;
 };
 
-export function TransactionForm({ accounts, onSuccess }: Props) {
+export function TransactionForm({ accounts, categories, onSuccess }: Props) {
   // Default values
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      account_id: accounts[0]?.id ?? "",
-      kind: "expense",
+      account_id: "",
+      category_id: "",
+      kind: "",
       date: undefined,
       amount: "",
       note: "",
@@ -72,9 +82,17 @@ export function TransactionForm({ accounts, onSuccess }: Props) {
 
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState<Date | undefined>(form.getValues("date"));
-  const accountId = form.watch("account_id"); // se actualiza al seleccionar
+  const accountId = form.watch("account_id");
   const selectedAccount = accounts.find((a) => a.id === accountId);
   const [isPending, startTransition] = useTransition();
+  const selectedKind = form.watch("kind");
+  const filteredCategories = categories.filter(
+    (c) => !c.kind || c.kind === selectedKind
+  );
+
+  useEffect(() => {
+    if (selectedKind === "transfer" || selectedKind === undefined) form.setValue("category_id", "");
+  }, [selectedKind]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const normalized = values.amount.replace(",", ".");
@@ -87,11 +105,16 @@ export function TransactionForm({ accounts, onSuccess }: Props) {
     const amount_minor = Math.round(num * 100);
 
     startTransition(async () => {
-      const { amount, ...rest } = values;
-      const res = await createTransaction({ ...rest, amount_minor });
+      const { amount, kind, ...rest } = values;
+      if (kind !== "income" && kind !== "expense" && kind !== "transfer") {
+        form.setError("kind", { message: "Select a transaction type" });
+        return;
+      }
+      const res = await createTransaction({ ...rest, kind, amount_minor });
       if (res.ok) {
         form.reset({
           account_id: accounts[0]?.id ?? "",
+          category_id: "",
           kind: "expense",
           date: undefined,
           amount: "",
@@ -115,12 +138,12 @@ export function TransactionForm({ accounts, onSuccess }: Props) {
               control={form.control}
               name="kind"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="space-y-2">
                   <FormLabel>Type</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="income">Income</SelectItem>
@@ -141,12 +164,12 @@ export function TransactionForm({ accounts, onSuccess }: Props) {
               control={form.control}
               name="account_id"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="space-y-2">
                   <FormLabel>Account</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select account" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {accounts.map((a) => (
@@ -162,12 +185,51 @@ export function TransactionForm({ accounts, onSuccess }: Props) {
               )}
             />
 
+            {/* category */}
+            <FormField
+              control={form.control}
+              name="category_id"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel>Category</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={field.value ?? ""}
+                      onValueChange={field.onChange}
+                      disabled={selectedKind === "transfer" || !selectedKind}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue
+                          placeholder={
+                            selectedKind === undefined
+                              ? "Select a type first"
+                              : selectedKind === "transfer"
+                              ? "Category isn't required for transfers"
+                              : ""
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredCategories.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {/* date */}
             <FormField
               control={form.control}
               name="date"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
+                <FormItem className="flex flex-col space-y-2">
                   <FormLabel>Date</FormLabel>
 
                   <Popover open={open} onOpenChange={setOpen}>
@@ -219,7 +281,7 @@ export function TransactionForm({ accounts, onSuccess }: Props) {
               control={form.control}
               name="amount"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="space-y-2">
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
                     <Input
@@ -246,7 +308,7 @@ export function TransactionForm({ accounts, onSuccess }: Props) {
               control={form.control}
               name="note"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="space-y-2">
                   <FormLabel>Note</FormLabel>
                   <FormControl>
                     <Textarea
@@ -268,7 +330,9 @@ export function TransactionForm({ accounts, onSuccess }: Props) {
               Cancel
             </Button>
           </DialogClose>
-          <Button type="submit" disabled={isPending}>{isPending ? "Saving..." : "Save"}</Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Saving..." : "Save"}
+          </Button>
         </div>
       </form>
     </Form>
