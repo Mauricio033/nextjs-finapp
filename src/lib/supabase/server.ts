@@ -1,8 +1,8 @@
-import { cookies } from 'next/headers'
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from "next/headers"
+import { createServerClient } from "@supabase/ssr"
+import type { CookieOptions } from "@supabase/ssr"
 
 export async function createSupabaseServer() {
-  // En Next 15 algunas builds piden await:
   const cookieStore = await cookies()
 
   return createServerClient(
@@ -10,20 +10,16 @@ export async function createSupabaseServer() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll().map(c => ({ name: c.name, value: c.value }))
         },
-        set(name: string, value: string, options: CookieOptions) {
+        setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
           try {
-            cookieStore.set({ name, value, ...options })
+            for (const { name, value, options } of cookiesToSet) {
+              cookieStore.set({ name, value, ...(options || {}) })
+            }
           } catch {
-            // en RSC puede no permitir set; está bien ignorar en algunos renders
           }
-        },
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value: '', ...options })
-          } catch {}
         },
       },
     }
