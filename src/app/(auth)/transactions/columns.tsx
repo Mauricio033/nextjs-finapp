@@ -67,9 +67,30 @@ export const columns: ColumnDef<Transaction>[] = [
   },
   {
     accessorKey: "date",
-    header: "Date",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Date
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
     cell: ({ getValue }) => formatDate(String(getValue() ?? "")),
     sortingFn: "datetime",
+  },
+  {
+    accessorKey: "amount_minor",
+    header: "Amount",
+    cell: ({ row }) =>
+      formatMoney(row.original.amount_minor, row.original.account_currency),
+    sortingFn: (a, b) =>
+      (a.original.amount_minor ?? 0) - (b.original.amount_minor ?? 0),
+  },
+  {
+    accessorKey: "account_currency",
+    header: "CCY",
+    cell: ({ getValue }) => String(getValue() ?? "").toUpperCase(),
   },
   {
     accessorKey: "account_name",
@@ -89,19 +110,6 @@ export const columns: ColumnDef<Transaction>[] = [
     accessorKey: "counterparty",
     header: "Counterparty",
     cell: ({ getValue }) => (getValue() as string | null) ?? "",
-  },
-  {
-    accessorKey: "amount_minor",
-    header: "Amount",
-    cell: ({ row }) =>
-      formatMoney(row.original.amount_minor, row.original.account_currency),
-    sortingFn: (a, b) =>
-      (a.original.amount_minor ?? 0) - (b.original.amount_minor ?? 0),
-  },
-  {
-    accessorKey: "account_currency",
-    header: "CCY",
-    cell: ({ getValue }) => String(getValue() ?? "").toUpperCase(),
   },
   {
     accessorKey: "created_at",
