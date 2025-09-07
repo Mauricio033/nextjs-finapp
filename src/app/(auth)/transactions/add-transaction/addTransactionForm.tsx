@@ -1,5 +1,6 @@
 "use client";
 
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -80,171 +81,173 @@ export function TransactionForm({ accounts, onSuccess }: Props) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {/* kind */}
-        <FormField
-          control={form.control}
-          name="kind"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Kind</FormLabel>
-              <FormControl>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="income">Income</SelectItem>
-                    <SelectItem value="expense">Expense</SelectItem>
-                    <SelectItem value="transfer">
-                      Transfer between accounts
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormControl>
-              <FormDescription>Transaction type.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        {/* account_id */}
-        <FormField
-          control={form.control}
-          name="account_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Account</FormLabel>
-              <FormControl>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name}
+        <ScrollArea className="h-90 w-full rounded-md p-4">
+          <div className="space-y-6">
+          {/* kind */}
+          <FormField
+            control={form.control}
+            name="kind"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Type</FormLabel>
+                <FormControl>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="income">Income</SelectItem>
+                      <SelectItem value="expense">Expense</SelectItem>
+                      <SelectItem value="transfer">
+                        Transfer between accounts
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormControl>
-              <FormDescription>Where this transaction belongs.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        {/* date */}
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Date</FormLabel>
+          {/* account_id */}
+          <FormField
+            control={form.control}
+            name="account_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Account</FormLabel>
+                <FormControl>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      onClick={() => setOpen((v) => !v)}
-                      className={
-                        !field.value
-                          ? "text-muted-foreground"
-                          : "text-foreground"
-                      }
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
+          {/* date */}
+          <FormField
+            control={form.control}
+            name="date"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Date</FormLabel>
 
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    month={month}
-                    onMonthChange={setMonth}
-                    onSelect={(d) => {
-                      if (!d) return;
-                      field.onChange(d);
-                      setMonth(d);
-                      setOpen(false); // ⬅️ ahora sí se cierra
-                    }}
-                    autoFocus
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        onClick={() => setOpen((v) => !v)}
+                        className={
+                          !field.value
+                            ? "text-muted-foreground"
+                            : "text-foreground"
+                        }
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <p>Pick a date</p>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      month={month}
+                      onMonthChange={setMonth}
+                      onSelect={(d) => {
+                        if (!d) return;
+                        field.onChange(d);
+                        setMonth(d);
+                        setOpen(false);
+                      }}
+                      autoFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* amount_minor */}
+          <FormField
+            control={form.control}
+            name="amount_minor"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Amount</FormLabel>
+                <FormControl>
+                  <Input type="number" inputMode="numeric" {...field} />
+                </FormControl>
+                <FormDescription>
+                  Enter the amount in minor units (e.g. cents).
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* counterparty */}
+          <FormField
+            control={form.control}
+            name="counterparty"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Counterparty</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Optional"
+                    {...field}
+                    value={field.value ?? ""}
                   />
-                </PopoverContent>
-              </Popover>
+                </FormControl>
+                <FormDescription>
+                  Who you paid or received from (optional).
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* amount_minor */}
-        <FormField
-          control={form.control}
-          name="amount_minor"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Amount (cents)</FormLabel>
-              <FormControl>
-                <Input type="number" inputMode="numeric" {...field} />
-              </FormControl>
-              <FormDescription>
-                Enter the amount in minor units (e.g. cents).
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* counterparty */}
-        <FormField
-          control={form.control}
-          name="counterparty"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Counterparty</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Optional"
-                  {...field}
-                  value={field.value ?? ""}
-                />
-              </FormControl>
-              <FormDescription>
-                Who you paid or received from (optional).
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* note */}
-        <FormField
-          control={form.control}
-          name="note"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Note</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Optional note"
-                  {...field}
-                  value={field.value ?? ""}
-                />
-              </FormControl>
-              <FormDescription>Extra details (optional).</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          {/* note */}
+          <FormField
+            control={form.control}
+            name="note"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Note</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Optional note"
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </FormControl>
+                <FormDescription>Extra details (optional).</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          </div>
+          </ScrollArea>
 
         <div className="flex justify-end gap-2">
           <DialogClose asChild>

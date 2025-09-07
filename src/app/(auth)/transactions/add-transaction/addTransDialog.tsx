@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,7 +15,11 @@ import { TransactionForm } from "./addTransactionForm";
 
 type AccountOption = { id: string; name: string; currency: string };
 
-export function NewTransactionDialog({ accounts }: { accounts: AccountOption[] }) {
+export function NewTransactionDialog({
+  accounts,
+}: {
+  accounts: AccountOption[];
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -30,8 +35,10 @@ export function NewTransactionDialog({ accounts }: { accounts: AccountOption[] }
             Record an income, expense, or transfer.
           </DialogDescription>
         </DialogHeader>
-
-        <TransactionForm accounts={accounts} onSuccess={() => setOpen(false)} />
+          <TransactionForm
+            accounts={accounts}
+            onSuccess={() => setOpen(false)}
+          />
       </DialogContent>
     </Dialog>
   );
