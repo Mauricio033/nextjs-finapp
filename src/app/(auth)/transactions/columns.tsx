@@ -5,9 +5,11 @@ import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 
-// ---- Schema ----
+const LOCALE = "en-US";
+const TZ = "UTC";
+
 export const transactionSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   kind: z.enum(["income", "expense", "transfer"]),
   date: z.string(),
   note: z.string().nullable().optional(),
@@ -21,10 +23,10 @@ export const transactionSchema = z.object({
 
 export type Transaction = z.infer<typeof transactionSchema>;
 
-const formatMoney = (minor: number, currency: string) => {
+export const formatMoney = (minor: number, currency: string, locale = LOCALE) => {
   const value = minor / 100;
   try {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
       currencyDisplay: "narrowSymbol",
@@ -36,15 +38,15 @@ const formatMoney = (minor: number, currency: string) => {
   }
 };
 
-const formatDate = (isoLike: string) => {
+export const formatDate = (isoLike: string, locale = LOCALE) => {
   const d = new Date(isoLike);
-  return isNaN(d.getTime())
-    ? isoLike
-    : new Intl.DateTimeFormat(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      }).format(d);
+  if (isNaN(d.getTime())) return isoLike;
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    timeZone: TZ,
+  }).format(d);
 };
 
 // ---- Columns ----

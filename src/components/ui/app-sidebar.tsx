@@ -5,7 +5,7 @@ import {
   ArrowUpDown,
   Search,
   Settings,
-  Users,
+  List,
   User2,
 } from "lucide-react";
 
@@ -49,9 +49,9 @@ const items = [
     icon: Landmark,
   },
   {
-    title: "Users",
-    url: "#",
-    icon: Users,
+    title: "Categories",
+    url: "categories",
+    icon: List,
   },
   {
     title: "Settings",

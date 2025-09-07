@@ -5,21 +5,19 @@ import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 
-export const accountSchema = z.object({
+export const categorySchema = z.object({
   name: z.string(),
-  currency: z.string().min(3).max(3), 
-  type: z.string(),
-  owner: z.string().optional(),
+  kind: z.enum(["income", "expense", "transfer"]),
 });
 
-export type Account = z.infer<typeof accountSchema>;
+export type Category = z.infer<typeof categorySchema>;
 
 const capitalize = (s: string) =>
   s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s;
 
 
 // ---------- columns ----------
-export const columns: ColumnDef<Account>[] = [
+export const columns: ColumnDef<Category>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => (
@@ -34,42 +32,16 @@ export const columns: ColumnDef<Account>[] = [
     cell: ({ getValue }) => String(getValue() ?? ""),
   },
   {
-    accessorKey: "currency",
+    accessorKey: "kind",
     header: ({ column }) => (
       <Button
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Currency
+        Kind
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
     cell: ({ getValue }) => String(getValue() ?? "").toUpperCase(),
-  },
-  {
-    accessorKey: "owner",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Owner
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ getValue }) => capitalize(String(getValue() ?? "")),
-  },
-  {
-    accessorKey: "type",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Type
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ getValue }) => capitalize(String(getValue() ?? "")),
   },
 ];
