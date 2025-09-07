@@ -67,9 +67,12 @@ export function AppSidebar() {
           <Image
             src="/FinApp_logo.png"
             alt="FinApp"
-            width={621}
-            height={212}
+            width={310}
+            height={106}
             className="h-10 w-40"
+            priority={false}
+            loading="lazy"
+            placeholder="empty"
           />
       </SidebarHeader>
       <SidebarContent>
