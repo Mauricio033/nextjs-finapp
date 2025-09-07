@@ -1,39 +1,48 @@
-"use server"
+// app/(auth)/transactions/actions.ts
+"use server";
 
-import { z } from "zod"
-import { createSupabaseServer } from "@/lib/supabase/server"
+import { z } from "zod";
+import { format } from "date-fns";
+import { createSupabaseServer } from "@/lib/supabase/server";
 
-export const createTxSchema = z.object({
-  kind: z.enum(["income", "expense", "transfer"]),
-  date: z.string().min(1, "Required"),
-  note: z.string().optional().nullable(),
+const createTxSchema = z.object({
+  account_id: z.string().uuid(),
+  kind: z.enum(["income", "expense", "transfer"] as const),
+  date: z.coerce.date(),
+  amount_minor: z.number().int().min(0),
   counterparty: z.string().optional().nullable(),
-  amount_minor: z.coerce.number().int().min(1, "Must be > 0"),
-  account_id: z.uuid({ message: "Select an account" }),
-})
+  note: z.string().optional().nullable(),
+});
 
-export type CreateTxInput = z.infer<typeof createTxSchema>
+export type CreateTxInput = z.infer<typeof createTxSchema>;
+export type CreateTxResult = { ok: true } | { ok: false; message: string };
 
-export async function addTransaction(input: CreateTxInput) {
-  const parsed = createTxSchema.safeParse(input)
+export async function createTransaction(input: CreateTxInput): Promise<CreateTxResult> {
+  const parsed = createTxSchema.safeParse(input);
   if (!parsed.success) {
-    throw new Error(parsed.error.issues.map(i => i.message).join(", "))
+    return { ok: false, message: "Invalid data" };
   }
+  const v = parsed.data;
 
-  const supabase = await createSupabaseServer()
-  const { data, error } = await supabase
-    .from("transactions")
-    .insert({
-      kind: input.kind,
-      date: input.date,
-      note: input.note ?? null,
-      counterparty: input.counterparty ?? null,
-      amount_minor: input.amount_minor,
-      account_id: input.account_id,
-    })
-    .select("id")
-    .single()
+  const supabase = await createSupabaseServer();
 
-  if (error) throw new Error(error.message)
-  return { id: data.id }
+  // Si tu columna date es DATE:
+  const dateStr = format(v.date, "yyyy-MM-dd");
+
+  const { error } = await supabase.from("transactions").insert({
+    account_id: v.account_id,
+    kind: v.kind,
+    date: dateStr,
+    amount_minor: v.amount_minor,
+    counterparty: v.counterparty ?? null,
+    note: v.note ?? null,
+  });
+
+  if (error) return { ok: false, message: error.message };
+
+  // opcional: revalidar la página
+  // import { revalidatePath } from "next/cache";
+  // revalidatePath("/(auth)/transactions");
+
+  return { ok: true };
 }

@@ -12,7 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { TransactionForm } from "./addTransactionForm";
 
-export function NewTransactionDialog() {
+type AccountOption = { id: string; name: string; currency: string };
+
+export function NewTransactionDialog({ accounts }: { accounts: AccountOption[] }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -29,7 +31,7 @@ export function NewTransactionDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <TransactionForm onSuccess={() => setOpen(false)} />
+        <TransactionForm accounts={accounts} onSuccess={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   );

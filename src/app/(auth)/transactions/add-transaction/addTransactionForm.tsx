@@ -34,26 +34,30 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-type TransactionFormProps = {
-  onSuccess?: () => void;
-};
+type AccountOption = { id: string; name: string; currency: string };
 
 const formSchema = z.object({
+  account_id: z.uuid({ message: "Select an account" }),
   kind: z.enum(["income", "expense", "transfer"] as const),
   date: z.date({
     error: (issue) => (issue.input === undefined ? "Required" : "Invalid date"),
   }),
-  //date: z.string().min(1, { message: "Date is required" }), // YYYY-MM-DD
   amount_minor: z.preprocess(Number, z.number().int().min(0, "Must be >= 0")),
   counterparty: z.string().optional().nullable(),
   note: z.string().optional().nullable(),
 });
 
-export function TransactionForm({ onSuccess }: TransactionFormProps) {
+type Props = {
+  accounts: AccountOption[];
+  onSuccess?: () => void;
+};
+
+export function TransactionForm({ accounts, onSuccess }: Props) {
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      account_id: accounts[0]?.id ?? "",
       kind: "expense",
       date: undefined,
       amount_minor: 0,
@@ -98,6 +102,33 @@ export function TransactionForm({ onSuccess }: TransactionFormProps) {
                 </Select>
               </FormControl>
               <FormDescription>Transaction type.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        {/* account_id */}
+        <FormField
+          control={form.control}
+          name="account_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Account</FormLabel>
+              <FormControl>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormDescription>Where this transaction belongs.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
