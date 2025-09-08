@@ -116,11 +116,6 @@ export const columns: ColumnDef<Transaction>[] = [
     cell: ({ getValue }) => (getValue() as string | null) ?? "",
   },
   {
-    accessorKey: "counterparty",
-    header: "Counterparty",
-    cell: ({ getValue }) => (getValue() as string | null) ?? "",
-  },
-  {
     accessorKey: "created_at",
     header: "Created",
     cell: ({ getValue }) => formatDate(String(getValue() ?? "")),
