@@ -23,7 +23,11 @@ export const transactionSchema = z.object({
 
 export type Transaction = z.infer<typeof transactionSchema>;
 
-export const formatMoney = (minor: number, currency: string, locale = LOCALE) => {
+export const formatMoney = (
+  minor: number,
+  currency: string,
+  locale = LOCALE
+) => {
   const value = minor / 100;
   try {
     return new Intl.NumberFormat(locale, {
@@ -82,17 +86,20 @@ export const columns: ColumnDef<Transaction>[] = [
     sortingFn: "datetime",
   },
   {
-    accessorKey: "amount_minor",
-    header: "Amount",
-    cell: ({ row }) =>
-      formatMoney(row.original.amount_minor, row.original.account_currency),
-    sortingFn: (a, b) =>
-      (a.original.amount_minor ?? 0) - (b.original.amount_minor ?? 0),
-  },
-  {
     accessorKey: "account_currency",
     header: "CCY",
     cell: ({ getValue }) => String(getValue() ?? "").toUpperCase(),
+  },
+  {
+    accessorKey: "amount_minor",
+    header: "Amount",
+    cell: ({ row }) => (
+      <div className="text-right">
+        {formatMoney(row.original.amount_minor, row.original.account_currency)}
+      </div>
+    ),
+    sortingFn: (a, b) =>
+      (a.original.amount_minor ?? 0) - (b.original.amount_minor ?? 0),
   },
   {
     accessorKey: "account_name",

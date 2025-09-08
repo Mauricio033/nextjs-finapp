@@ -35,7 +35,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { createTransaction } from "../actions";
+import { createTransaction, createTransfer } from "../actions";
 
 type AccountOption = { id: string; name: string; currency: string };
 type CategoryOption = {
@@ -47,7 +47,7 @@ type CategoryOption = {
 const kindEnum = z.enum(["income", "expense", "transfer"]);
 
 const base = z.object({
-  kind: z.union([kindEnum, z.literal("")]),
+  kind: kindEnum,
   date: z.date({
     error: (issue) => (issue.input === undefined ? "Required" : "Invalid date"),
   }),
@@ -59,7 +59,14 @@ const base = z.object({
 });
 
 // income / expense
-const incomeExpenseSchema = base.extend({
+const incomeSchema = base.extend({
+  kind: z.literal("income"),
+  account_id: z.uuid({ message: "Select an account" }),
+  category_id: z.union([z.uuid(), z.literal("")]).optional(),
+});
+
+const expenseSchema = base.extend({
+  kind: z.literal("expense"),
   account_id: z.uuid({ message: "Select an account" }),
   category_id: z.union([z.uuid(), z.literal("")]).optional(),
 });
@@ -67,6 +74,7 @@ const incomeExpenseSchema = base.extend({
 // transfer
 const transferSchema = base
   .extend({
+    kind: z.literal("transfer"),
     from_account: z.uuid(),
     to_account: z.uuid(),
   })
@@ -76,7 +84,8 @@ const transferSchema = base
   });
 
 export const formSchema = z.discriminatedUnion("kind", [
-  incomeExpenseSchema,
+  incomeSchema,
+  expenseSchema,
   transferSchema,
 ]);
 
@@ -93,7 +102,7 @@ export function TransactionForm({ accounts, categories, onSuccess }: Props) {
     defaultValues: {
       account_id: "",
       category_id: "",
-      kind: "",
+      kind: undefined as any,
       date: undefined,
       amount: "",
       note: "",
@@ -131,26 +140,58 @@ export function TransactionForm({ accounts, categories, onSuccess }: Props) {
         form.setError("kind", { message: "Select a transaction type" });
         return;
       }
-      const res = await createTransaction({
-        ...rest,
-        kind,
-        amount_minor,
-        account_id: "",
-        category_id: undefined,
-      });
-      if (res.ok) {
+
+      try {
+        if (values.kind === "transfer") {
+          const transferValues = values as z.infer<typeof transferSchema>;
+          const res = await createTransfer({
+            kind: "transfer",
+            from_account: transferValues.from_account,
+            to_account: transferValues.to_account,
+            amount_minor,
+            date: transferValues.date,
+            note: transferValues.note ?? null,
+          });
+
+          if (!res.ok) {
+            form.setError("root", {
+              message: res.message || "Failed to create transfer",
+            });
+            return;
+          }
+        } else {
+          const incomeExpenseValues = values as z.infer<
+            typeof expenseSchema
+          >;
+          const res = await createTransaction({
+            account_id: incomeExpenseValues.account_id,
+            category_id: incomeExpenseValues.category_id,
+            kind: incomeExpenseValues.kind as "income" | "expense" | "transfer",
+            date: incomeExpenseValues.date,
+            amount_minor,
+            note: incomeExpenseValues.note ?? null,
+          });
+
+          if (!res.ok) {
+            form.setError("root", { message: res.message || "Failed to save" });
+            return;
+          }
+        }
+
         form.reset({
-          account_id: accounts[0]?.id ?? "",
-          category_id: "",
-          kind: "expense",
+          kind: "",
           date: undefined,
           amount: "",
           note: "",
-        });
-        console.log(values);
+          account_id: "",
+          category_id: "",
+          from_account: undefined as any,
+          to_account: undefined as any,
+        } as any);
+
         onSuccess?.();
-      } else {
-        form.setError("root", { message: res.message || "Failed to save" });
+      } catch (e: any) {
+        form.setError("root", { message: e?.message ?? "Unexpected error" });
       }
     });
   }

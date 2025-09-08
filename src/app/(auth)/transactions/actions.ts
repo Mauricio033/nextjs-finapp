@@ -93,11 +93,11 @@ export async function createTransfer(
 
   const supabase = await createSupabaseServer();
   const { data: gid, error } = await supabase.rpc("create_transfer", {
-    from_account: v.from_account,
-    to_account: v.to_account,
-    amount_minor: v.amount_minor,
-    date: format(v.date, "yyyy-MM-dd"),
-    note: v.note ?? null,
+    p_from_account: v.from_account,
+    p_to_account: v.to_account,
+    p_amount_minor: v.amount_minor,
+    p_date: format(v.date, "yyyy-MM-dd"),
+    p_note: v.note ?? null,
   });
 
   if (error) {
