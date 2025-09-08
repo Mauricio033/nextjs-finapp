@@ -5,19 +5,40 @@ import { format } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServer } from "@/lib/supabase/server";
 
-const createTxSchema = z.object({
-  account_id: z.uuid(),
-  category_id: z.string().uuid().optional().or(z.literal("")).optional(),
-  kind: z.enum(["income", "expense", "transfer"] as const),
+const base = z.object({
   date: z.coerce.date(),
-  amount_minor: z.number().int().nonnegative(),
-  note: z.string().nullable().optional(),
+  amount_minor: z.coerce.number().int().positive(),
+  note: z.string().trim().max(200).optional().nullable(),
 });
 
+const createTxSchema = base.extend({
+  kind: z.enum(["income", "expense", "transfer"]),
+  account_id: z.uuid(),
+  category_id: z
+    .uuid()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => v || undefined),
+});
+
+const transferSchema = base
+  .extend({
+    kind: z.literal("transfer"),
+    from_account: z.uuid(),
+    to_account: z.uuid(),
+  })
+  .refine((v) => v.from_account !== v.to_account, {
+    message: "Accounts must differ",
+    path: ["to_account"],
+  });
+
+//Transaction
 export type CreateTxInput = z.infer<typeof createTxSchema>;
 export type CreateTxResult = { ok: true } | { ok: false; message: string };
 
-export async function createTransaction(input: CreateTxInput): Promise<CreateTxResult> {
+export async function createTransaction(
+  input: CreateTxInput
+): Promise<CreateTxResult> {
   const parsed = createTxSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, message: "Invalid data" };
@@ -31,13 +52,7 @@ export async function createTransaction(input: CreateTxInput): Promise<CreateTxR
     return { ok: false, message: "Not authenticated" };
   }
 
-  const abs = Math.abs(v.amount_minor);
-  if (v.kind === "transfer") {
-    // When transfer is implemented, change this to create two entries (expense + income)
-    return { ok: false, message: "Transfers require from/to accounts (not implemented yet)." };
-  }
-  const signedAmount = v.kind === "expense" ? -abs : abs;
-
+  const signedAmount = v.kind === "expense" ? -v.amount_minor : v.amount_minor;
   const dateStr = format(v.date, "yyyy-MM-dd");
 
   const { error } = await supabase.from("transactions").insert({
@@ -57,4 +72,40 @@ export async function createTransaction(input: CreateTxInput): Promise<CreateTxR
 
   revalidatePath("/transactions");
   return { ok: true };
+}
+
+//Transfer
+export type TransferInput = z.infer<typeof transferSchema>;
+export type TransferResult =
+  | { ok: true; gid: string }
+  | { ok: false; message: string };
+
+export async function createTransfer(
+  input: TransferInput
+): Promise<TransferResult> {
+  const parsed = transferSchema.safeParse(input);
+  if (!parsed.success)
+    return {
+      ok: false,
+      message: parsed.error.issues[0]?.message ?? "Invalid data",
+    };
+  const v = parsed.data;
+
+  const supabase = await createSupabaseServer();
+  const { data: gid, error } = await supabase.rpc("create_transfer", {
+    from_account: v.from_account,
+    to_account: v.to_account,
+    amount_minor: v.amount_minor,
+    date: format(v.date, "yyyy-MM-dd"),
+    note: v.note ?? null,
+  });
+
+  if (error) {
+    console.error("createTransfer error:", error);
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/transactions");
+
+  return { ok: true, gid: gid as string };
 }

@@ -46,9 +46,7 @@ type CategoryOption = {
 
 const kindEnum = z.enum(["income", "expense", "transfer"]);
 
-const formSchema = z.object({
-  account_id: z.uuid({ message: "Select an account" }),
-  category_id: z.union([z.uuid(), z.literal("")]).optional(),
+const base = z.object({
   kind: z.union([kindEnum, z.literal("")]),
   date: z.date({
     error: (issue) => (issue.input === undefined ? "Required" : "Invalid date"),
@@ -59,6 +57,28 @@ const formSchema = z.object({
     .regex(/^\d+(?:[.,]\d{1,2})?$/, "Enter a valid amount (max 2 decimals)"),
   note: z.string().optional().nullable(),
 });
+
+// income / expense
+const incomeExpenseSchema = base.extend({
+  account_id: z.uuid({ message: "Select an account" }),
+  category_id: z.union([z.uuid(), z.literal("")]).optional(),
+});
+
+// transfer
+const transferSchema = base
+  .extend({
+    from_account: z.uuid(),
+    to_account: z.uuid(),
+  })
+  .refine((v) => v.from_account !== v.to_account, {
+    message: "Accounts must differ",
+    path: ["to_account"],
+  });
+
+export const formSchema = z.discriminatedUnion("kind", [
+  incomeExpenseSchema,
+  transferSchema,
+]);
 
 type Props = {
   accounts: AccountOption[];
@@ -91,7 +111,8 @@ export function TransactionForm({ accounts, categories, onSuccess }: Props) {
   );
 
   useEffect(() => {
-    if (selectedKind === "transfer" || selectedKind === undefined) form.setValue("category_id", "");
+    if (selectedKind === "transfer" || selectedKind === undefined)
+      form.setValue("category_id", "");
   }, [selectedKind]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -110,7 +131,13 @@ export function TransactionForm({ accounts, categories, onSuccess }: Props) {
         form.setError("kind", { message: "Select a transaction type" });
         return;
       }
-      const res = await createTransaction({ ...rest, kind, amount_minor });
+      const res = await createTransaction({
+        ...rest,
+        kind,
+        amount_minor,
+        account_id: "",
+        category_id: undefined,
+      });
       if (res.ok) {
         form.reset({
           account_id: accounts[0]?.id ?? "",
@@ -158,71 +185,133 @@ export function TransactionForm({ accounts, categories, onSuccess }: Props) {
                 </FormItem>
               )}
             />
+            {selectedKind !== "transfer" ? (
+              <>
+                {/* account_id */}
+                <FormField
+                  control={form.control}
+                  name="account_id"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel>Account</FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {accounts.map((a) => (
+                              <SelectItem key={a.id} value={a.id}>
+                                {a.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            {/* account_id */}
-            <FormField
-              control={form.control}
-              name="account_id"
-              render={({ field }) => (
-                <FormItem className="space-y-2">
-                  <FormLabel>Account</FormLabel>
-                  <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {accounts.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {a.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                {/* category */}
+                <FormField
+                  control={form.control}
+                  name="category_id"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel>Category</FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value ?? ""}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {filteredCategories.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
 
-            {/* category */}
-            <FormField
-              control={form.control}
-              name="category_id"
-              render={({ field }) => (
-                <FormItem className="space-y-2">
-                  <FormLabel>Category</FormLabel>
-                  <FormControl>
-                    <Select
-                      value={field.value ?? ""}
-                      onValueChange={field.onChange}
-                      disabled={selectedKind === "transfer" || !selectedKind}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue
-                          placeholder={
-                            selectedKind === undefined
-                              ? "Select a type first"
-                              : selectedKind === "transfer"
-                              ? "Category isn't required for transfers"
-                              : ""
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {filteredCategories.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            ) : (
+              <>
+                {/* From account */}
 
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="from_account"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel>From account</FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select source account" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {accounts.map((a) => (
+                              <SelectItem key={a.id} value={a.id}>
+                                {a.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* To account */}
+                <FormField
+                  control={form.control}
+                  name="to_account"
+                  render={({ field }) => {
+                    const from = form.watch("from_account");
+                    const options = accounts.filter((a) => a.id !== from);
+                    return (
+                      <FormItem className="space-y-2">
+                        <FormLabel>To account</FormLabel>
+                        <FormControl>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select destination account" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {options.map((a) => (
+                                <SelectItem key={a.id} value={a.id}>
+                                  {a.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+              </>
+            )}
 
             {/* date */}
             <FormField
