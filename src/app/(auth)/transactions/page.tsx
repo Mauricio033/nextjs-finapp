@@ -2,6 +2,7 @@ import { createSupabaseServer } from "@/lib/supabase/server";
 import { columns } from "./columns";
 import { DataTable } from "@/components/ui/data-table";
 import { NewTransactionDialog } from "./add-transaction/addTransDialog";
+import { ModeToggle } from "@/components/ui/theme-toggle";
 
 export default async function TransactionsPage() {
   const supabase = await createSupabaseServer();
@@ -40,6 +41,7 @@ export default async function TransactionsPage() {
       </div>
 
       <div className="container mx-auto py-10">
+        <ModeToggle />
         <DataTable columns={columns} data={data} />
       </div>
     </>

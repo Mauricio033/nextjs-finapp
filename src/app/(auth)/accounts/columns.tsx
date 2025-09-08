@@ -4,20 +4,20 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
+import { formatMoney } from "../transactions/columns";
 
 export const accountSchema = z.object({
   name: z.string(),
   currency: z.string().min(3).max(3),
   type: z.string(),
   owner: z.string().optional(),
-  balance_minor: z.number(),
+  balance_minor: z.coerce.number(),
 });
 
 export type Account = z.infer<typeof accountSchema>;
 
 const capitalize = (s: string) =>
   s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s;
-
 
 // ---------- columns ----------
 export const columns: ColumnDef<Account>[] = [
@@ -75,14 +75,19 @@ export const columns: ColumnDef<Account>[] = [
   },
   {
     accessorKey: "balance_minor",
-    header: "Balance",
-    cell: ({ row }) => {
-      const value = row.getValue<number>("balance_minor");
-      const currency = row.original.currency;
-      return new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency,
-      }).format(value / 100);
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Balance
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => (
+          <div className="text-center">
+            {formatMoney(row.original.balance_minor, row.original.currency)}
+          </div>
+        ),
   },
 ];
