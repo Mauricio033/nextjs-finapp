@@ -6,8 +6,8 @@ import { NewAccountDialog } from "./addAccount/newAccountDialog";
 export default async function AccountsPage() {
   const supabase = await createSupabaseServer();
   const { data, error } = await supabase
-    .from("accounts")
-    .select("name,currency,owner,type");
+    .from("v_accounts_with_balance")
+    .select("name,currency,owner,type,balance_minor");
   if (error) {
     return <div className="p-6 text-red-600">Error: {error.message}</div>;
   }

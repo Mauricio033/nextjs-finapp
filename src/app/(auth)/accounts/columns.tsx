@@ -7,9 +7,10 @@ import { z } from "zod";
 
 export const accountSchema = z.object({
   name: z.string(),
-  currency: z.string().min(3).max(3), 
+  currency: z.string().min(3).max(3),
   type: z.string(),
   owner: z.string().optional(),
+  balance_minor: z.number(),
 });
 
 export type Account = z.infer<typeof accountSchema>;
@@ -71,5 +72,17 @@ export const columns: ColumnDef<Account>[] = [
       </Button>
     ),
     cell: ({ getValue }) => capitalize(String(getValue() ?? "")),
+  },
+  {
+    accessorKey: "balance_minor",
+    header: "Balance",
+    cell: ({ row }) => {
+      const value = row.getValue<number>("balance_minor");
+      const currency = row.original.currency;
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency,
+      }).format(value / 100);
+    },
   },
 ];
