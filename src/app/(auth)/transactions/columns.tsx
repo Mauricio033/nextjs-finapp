@@ -94,7 +94,7 @@ export const columns: ColumnDef<Transaction>[] = [
     accessorKey: "amount_minor",
     header: "Amount",
     cell: ({ row }) => (
-      <div className="text-right">
+      <div>
         {formatMoney(row.original.amount_minor, row.original.account_currency)}
       </div>
     ),

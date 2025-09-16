@@ -3,7 +3,6 @@ import {
   Home,
   Landmark,
   ArrowUpDown,
-  Settings,
   List,
   User2,
 } from "lucide-react";
@@ -53,11 +52,6 @@ const items = [
     url: "categories",
     icon: List,
   },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
-  },
 ];
 
 export function AppSidebar() {
@@ -65,13 +59,12 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader>
           <Image
-            src="/FinApp_logo.png"
+            src="/FSLogo.png"
             alt="FinApp"
-            width={310}
-            height={106}
+            width={512}
+            height={197}
             className="h-10 w-40"
             priority={false}
-            loading="lazy"
             placeholder="empty"
           />
       </SidebarHeader>

@@ -85,7 +85,7 @@ export const columns: ColumnDef<Account>[] = [
       </Button>
     ),
     cell: ({ row }) => (
-          <div className="text-center">
+          <div>
             {formatMoney(row.original.balance_minor, row.original.currency)}
           </div>
         ),
