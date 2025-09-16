@@ -1,9 +1,12 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
+import { Pencil, Trash } from "lucide-react";
+import { DeleteTransactionButton } from "@/components/ui/deleteTransactionButton";
 
 const LOCALE = "en-US";
 const TZ = "UTC";
@@ -19,6 +22,7 @@ export const transactionSchema = z.object({
   account_currency: z.string(),
   category_name: z.string().nullable().optional(),
   created_at: z.string(),
+  transfer_group_id: z.uuid().nullable().optional(),
 });
 
 export type Transaction = z.infer<typeof transactionSchema>;
@@ -120,5 +124,33 @@ export const columns: ColumnDef<Transaction>[] = [
     header: "Created",
     cell: ({ getValue }) => formatDate(String(getValue() ?? "")),
     sortingFn: "datetime",
+  },
+  {
+    id: "actions",
+    header: "",
+    enableSorting: false,
+    enableHiding: false,
+    size: 64,
+    cell: ({ row }) => {
+      const tx = row.original;
+      return (
+        <div className="flex justify-end gap-1">
+          <Link
+            href={`/transactions/${tx.id}/edit`}
+            aria-label="Edit transaction"
+          >
+            <Button variant="ghost" size="icon">
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </Link>
+
+          <DeleteTransactionButton
+            id={tx.id}
+            transferGroupId={tx.transfer_group_id || undefined}
+          />
+        </div>
+      );
+    },
+    meta: { align: "right" },
   },
 ];

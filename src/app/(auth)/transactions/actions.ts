@@ -109,3 +109,38 @@ export async function createTransfer(
 
   return { ok: true, gid: gid as string };
 }
+
+//Delete
+type DeleteTxInput = { id: string; transferGroupId?: string };
+
+export async function deleteTransaction({
+  id,
+  transferGroupId,
+}: DeleteTxInput) {
+  const supabase = await createSupabaseServer();
+
+  try {
+    if (transferGroupId) {
+      // Delete both sides of the transfer
+      const { error } = await supabase
+        .from("transactions")
+        .delete()
+        .eq("transfer_group_id", transferGroupId);
+
+      if (error) throw error;
+      revalidatePath("/transactions");
+      return { ok: true as const, message: "Transfer deleted" };
+    } else {
+      const { error } = await supabase
+        .from("transactions")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      revalidatePath("/transactions");
+      return { ok: true as const, message: "Transaction deleted" };
+    }
+  } catch (e: any) {
+    console.error("deleteTransaction error:", e);
+    return { ok: false as const, message: e?.message ?? "Delete failed" };
+  }
+}
