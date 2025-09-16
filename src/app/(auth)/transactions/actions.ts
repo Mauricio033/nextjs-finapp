@@ -111,36 +111,19 @@ export async function createTransfer(
 }
 
 //Delete
-type DeleteTxInput = { id: string; transferGroupId?: string };
-
-export async function deleteTransaction({
-  id,
-  transferGroupId,
-}: DeleteTxInput) {
+export async function deleteTransaction(id: string) {
   const supabase = await createSupabaseServer();
 
-  try {
-    if (transferGroupId) {
-      // Delete both sides of the transfer
-      const { error } = await supabase
-        .from("transactions")
-        .delete()
-        .eq("transfer_group_id", transferGroupId);
+  const { error } = await supabase
+    .from("transactions")
+    .delete()
+    .eq("id", id);
 
-      if (error) throw error;
-      revalidatePath("/transactions");
-      return { ok: true as const, message: "Transfer deleted" };
-    } else {
-      const { error } = await supabase
-        .from("transactions")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
-      revalidatePath("/transactions");
-      return { ok: true as const, message: "Transaction deleted" };
-    }
-  } catch (e: any) {
-    console.error("deleteTransaction error:", e);
-    return { ok: false as const, message: e?.message ?? "Delete failed" };
+  if (error) {
+    console.error("deleteTransaction error:", error);
+    return { ok: false as const, message: error.message };
   }
+
+  revalidatePath("/transactions");
+  return { ok: true as const };
 }

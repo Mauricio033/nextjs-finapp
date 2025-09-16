@@ -11,26 +11,25 @@ import {
 import { deleteTransaction } from "@/app/(auth)/transactions/actions";
 import { toast } from "sonner";
 
-export function DeleteTransactionButton({
-  id,
-  transferGroupId,
-}: {
-  id: string;
-  transferGroupId?: string;
-}) {
+export function DeleteTransactionButton({ id }: { id: string }) {
   const [isPending, startTransition] = useTransition();
 
   const onConfirm = () =>
     startTransition(async () => {
-      const res = await deleteTransaction({ id, transferGroupId });
-      if (res.ok) toast.success(res.message ?? "Deleted");
-      else toast.error(res.message ?? "Error deleting");
+      const res = await deleteTransaction(id);
+      if (res.ok) toast.success("Transaction deleted");
+      else toast.error(res.message ?? "Error deleting transaction");
     });
 
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Delete transaction" disabled={isPending}>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Delete transaction"
+          disabled={isPending}
+        >
           <Trash className="h-4 w-4" />
         </Button>
       </AlertDialogTrigger>
@@ -38,9 +37,7 @@ export function DeleteTransactionButton({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete transaction?</AlertDialogTitle>
           <AlertDialogDescription>
-            {transferGroupId
-              ? "This is part of a transfer. Both sides will be removed."
-              : "This action can’t be undone."}
+            This action can’t be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
