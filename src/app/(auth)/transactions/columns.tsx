@@ -144,7 +144,7 @@ export const columns: ColumnDef<Transaction>[] = [
             </Button>
           </Link>
 
-          <DeleteTransactionButton id={tx.id} />
+          <DeleteTransactionButton id={tx.id} transferGroupId={tx.transfer_group_id} />
         </div>
       );
     },

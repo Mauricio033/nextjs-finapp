@@ -114,16 +114,31 @@ export async function createTransfer(
 export async function deleteTransaction(id: string) {
   const supabase = await createSupabaseServer();
 
-  const { error } = await supabase
+  const { data: tx, error: getErr } = await supabase
     .from("transactions")
-    .delete()
-    .eq("id", id);
+    .select("id, transfer_group_id")
+    .eq("id", id)
+    .single();
 
-  if (error) {
-    console.error("deleteTransaction error:", error);
-    return { ok: false as const, message: error.message };
+  if (getErr || !tx) {
+    return { ok: false, message: getErr?.message ?? "Transaction not found" };
+  }
+
+  // If is a transfer, delete all with same transfer_group_id
+  if (tx.transfer_group_id) {
+    const { error } = await supabase
+      .from("transactions")
+      .delete()
+      .eq("transfer_group_id", tx.transfer_group_id);
+    if (error) return { ok: false, message: error.message };
+  } else {
+    const { error } = await supabase
+      .from("transactions")
+      .delete()
+      .eq("id", id);
+    if (error) return { ok: false, message: error.message };
   }
 
   revalidatePath("/transactions");
-  return { ok: true as const };
+  return { ok: true };
 }
